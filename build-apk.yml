@@ -1,0 +1,114 @@
+# 灵喵 LingMiao — 云端自动构建APK
+# 推送代码到 main 分支后，GitHub自动编译、签名、出APK
+# 预计耗时：5~8分钟
+
+name: Build LingMiao APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout 代码
+        uses: actions/checkout@v4
+
+      - name: ☕ 安装 JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: 🤖 安装 Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          api-level: 34
+          build-tools: '34.0.0'
+          ndk-version: '25.2.9519653'
+          cmake-version: '3.22.1'
+
+      - name: 📦 缓存 Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: ${{ runner.os }}-gradle-
+
+      - name: 🔑 写入签名配置
+        run: |
+          cat > keystore.properties <<EOF
+          storeFile=lingmiao.keystore
+          storePassword=${{ secrets.KEYSTORE_PASSWORD }}
+          keyAlias=lingmiao_key
+          keyPassword=${{ secrets.KEY_PASSWORD }}
+          EOF
+
+      - name: 📱 生成签名密钥（首次运行）
+        run: |
+          keytool -genkey -v \
+            -keystore app/lingmiao.keystore \
+            -alias lingmiao_key \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -storepass ${{ secrets.KEYSTORE_PASSWORD }} \
+            -keypass ${{ secrets.KEY_PASSWORD }} \
+            -dname "CN=LingMiao, OU=Mobile, O=LingMiao, L=CN, S=CN, C=CN"
+
+      - name: 🔨 编译 Release APK
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon --stacktrace
+
+      - name: 📏 检查APK体积（目标22MB±0.5MB）
+        run: |
+          APK_SIZE=$(stat -c%s app/build/outputs/apk/release/app-release.apk)
+          APK_SIZE_MB=$(echo "scale=2; $APK_SIZE / 1048576" | bc)
+          echo "APK大小: ${APK_SIZE_MB}MB"
+          # 断言体积在20~24MB之间
+          if [ $(echo "$APK_SIZE_MB > 24" | bc) -eq 1 ] || [ $(echo "$APK_SIZE_MB < 20" | bc) -eq 1 ]; then
+            echo "⚠️ 体积异常: ${APK_SIZE_MB}MB（目标22MB±2MB）"
+            exit 1
+          fi
+          echo "✅ 体积合规: ${APK_SIZE_MB}MB"
+
+      - name: 🧪 运行单元测试
+        run: ./gradlew testReleaseUnitTest --no-daemon
+
+      - name: 📤 上传APK产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: LingMiao-v2.0.0-${{ github.run_number }}
+          path: app/build/outputs/apk/release/app-release.apk
+
+      - name: 🏷 创建 Release（自动发布下载链接）
+        if: github.event_name == 'workflow_dispatch'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v2.0.0-${{ github.run_number }}
+          name: 灵喵 LingMiao v2.0.0 (Build ${{ github.run_number }})
+          body: |
+            ## 灵喵 LingMiao v2.0.0
+
+            ### ✅ 功能清单
+            - 全平台通用台球识别（大型APP/小型APP/抖音小窗）
+            - 桌布识别区域四角独立拖拽 + 透视矫正
+            - 直球 / 反带球 / 多库翻袋（1~5库BFS）
+            - 自动判定母球与子球最优路线
+            - 自适应球桌大小（任意分辨率/任意比例）
+            - 60fps 悬浮窗渲染
+            - 前台服务保活
+
+            ### 📱 适配
+            - Android 7.0 ~ 14（API 24-34）
+            - arm64-v8a（所有新款手机）
+
+            ### 📦 安装
+            下载 APK → 允许"未知来源" → 安装 → 授予悬浮窗+录屏权限
+          files: app/build/outputs/apk/release/app-release.apk

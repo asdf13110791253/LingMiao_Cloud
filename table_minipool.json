@@ -1,0 +1,20 @@
+{
+  "name": "Miniclip Pool",
+  "width_mm": 1800,
+  "height_mm": 900,
+  "pocket_radius_mm": 40.0,
+  "cushion_height_mm": 30.0,
+  "rail_width_mm": 35,
+  "ball_radius_mm": 20.0,
+  "aspect_ratio": 2.0,
+  "cloth_friction": 0.99,
+  "ball_mass_g": 100,
+  "physics_params": {
+    "restitution": 0.85,
+    "rolling_resistance": 0.04,
+    "spin_decay": 0.99,
+    "collision_elasticity": 0.97
+  },
+  "default_compensation": 0.15,
+  "default_max_bounces": 4
+}

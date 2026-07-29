@@ -1,0 +1,36 @@
+{
+  "supported_games": [
+    {
+      "pkg": "com.miniclip.eightballpool",
+      "name": "8 Ball Pool",
+      "table": "16:9",
+      "cloth": 2
+    },
+    {
+      "pkg": "com.ea.game.billiards",
+      "name": "Real Billiards",
+      "table": "4:3",
+      "cloth": 1
+    },
+    {
+      "pkg": "com.sports.billiards.king",
+      "name": "\u53f0\u7403\u738b\u8005",
+      "table": "16:9",
+      "cloth": 2
+    },
+    {
+      "pkg": "com.pool.nation",
+      "name": "Pool Nation",
+      "table": "16:9",
+      "cloth": 3
+    }
+  ],
+  "default_settings": {
+    "cloth": 2,
+    "mode": "compensation",
+    "ratio": 0.18,
+    "color": "#00FF88",
+    "width": 5.0,
+    "banks": 2
+  }
+}

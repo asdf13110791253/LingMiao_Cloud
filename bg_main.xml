@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:angle="180"
+                android:startColor="#0D0D1A"
+                android:centerColor="#1A1A2E"
+                android:endColor="#0F3460" />
+        </shape>
+    </item>
+    <!-- 装饰性网格 -->
+    <item>
+        <bitmap
+            android:src="@drawable/grid_overlay"
+            android:tileMode="repeat"
+            android:alpha="30" />
+    </item>
+</layer-list>
