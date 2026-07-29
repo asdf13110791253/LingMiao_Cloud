@@ -43,30 +43,37 @@ jobs:
 
       - name: Install Gradle 8.4
         run: |
-          wget -q https://mirrors.cloud.tencent.com/gradle/gradle-8.4-bin.zip -O gradle.zip
+          wget -q https://services.gradle.org/distributions/gradle-8.4-bin.zip -O gradle.zip
           unzip -q gradle.zip
           rm gradle.zip
           echo "GRADLE_EXE=$PWD/gradle-8.4/bin/gradle" >> $GITHUB_ENV
           chmod +x $PWD/gradle-8.4/bin/gradle
 
-      - name: Create local.properties and mirror config
+      - name: Create mirror config
         run: |
           echo "sdk.dir=$HOME/android-sdk" > local.properties
           mkdir -p ~/.gradle
           cat > ~/.gradle/init.gradle <<'EOF'
           allprojects {
             repositories {
-              maven { url 'https://maven.aliyun.com/repository/google' }
-              maven { url 'https://maven.aliyun.com/repository/central' }
-              maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
+              maven { url 'https://maven.aliyun.com/repository/public' }
               google()
               mavenCentral()
+            }
+            configurations.all {
+              resolutionStrategy {
+                cacheChangingModulesFor 0, 'seconds'
+                retry {
+                  maxRetries = 3
+                  maxTimeoutMs = 30000
+                }
+              }
             }
           }
           EOF
 
       - name: Build Debug APK
-        run: $GRADLE_EXE :app:assembleDebug --no-daemon --no-parallel --max-workers=1 --stacktrace
+        run: $GRADLE_EXE :app:assembleDebug --no-daemon --no-parallel --max-workers=1 --stacktrace --refresh-dependencies
         env:
           GRADLE_OPTS: "-Xmx1536m -Dorg.gradle.daemon=false"
 
