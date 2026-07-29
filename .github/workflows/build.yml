@@ -1,4 +1,4 @@
-name: Android CI (No Wrapper)
+name: Android CI (Ultimate Perfection)
 
 on:
   push:
@@ -8,34 +8,108 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 45
 
     steps:
-      - name: Checkout
+      - name: 1. Checkout source
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
-      - name: Set up JDK 17
+      - name: 2. Setup JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install Gradle manually
+      - name: 3. Dump environment
         run: |
-          wget -q https://services.gradle.org/distributions/gradle-8.4-bin.zip
-          unzip -q gradle-8.4-bin.zip
-          echo "GRADLE_BIN=$PWD/gradle-8.4/bin/gradle" >> $GITHUB_ENV
+          echo "========== ENVIRONMENT =========="
+          java -version
+          echo "PWD: $(pwd)"
+          ls -la
+          echo "================================="
 
-      - name: Build Debug APK
-        run: $GRADLE_BIN :app:assembleDebug --no-daemon --parallel=false --max-workers=1
+      - name: 4. Install Android SDK Command-Line Tools
+        run: |
+          mkdir -p $HOME/android-sdk/cmdline-tools
+          wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdline.zip
+          unzip -q cmdline.zip -d $HOME/android-sdk/cmdline-tools
+          mv $HOME/android-sdk/cmdline-tools/cmdline-tools $HOME/android-sdk/cmdline-tools/latest
+          rm cmdline.zip
+          echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
+          echo "ANDROID_SDK_ROOT=$HOME/android-sdk" >> $GITHUB_ENV
+          echo "$HOME/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
+          echo "$HOME/android-sdk/platform-tools" >> $GITHUB_PATH
+
+      - name: 5. Accept Android SDK licenses
+        run: yes | sdkmanager --licenses > /dev/null 2>&1 || true
+
+      - name: 6. Install SDK components
+        run: |
+          sdkmanager "platform-tools"
+          sdkmanager "platforms;android-34"
+          sdkmanager "build-tools;34.0.0"
+          sdkmanager "ndk;26.1.10909125" || true
+
+      - name: 7. Install Gradle 8.4 manually
+        run: |
+          wget -q https://services.gradle.org/distributions/gradle-8.4-bin.zip -O gradle.zip
+          unzip -q gradle.zip
+          rm gradle.zip
+          echo "GRADLE_EXE=$PWD/gradle-8.4/bin/gradle" >> $GITHUB_ENV
+          chmod +x $PWD/gradle-8.4/bin/gradle
+
+      - name: 8. Create local.properties
+        run: |
+          echo "sdk.dir=$HOME/android-sdk" > local.properties
+          echo "ndk.dir=$HOME/android-sdk/ndk/26.1.10909125" >> local.properties || true
+          cat local.properties
+
+      - name: 9. Fix permissions
+        run: chmod +x gradlew || true
+
+      - name: 10. Pre-download dependencies
+        run: |
+          $GRADLE_EXE dependencies --configuration releaseCompileClasspath --no-daemon || true
+          $GRADLE_EXE dependencies --configuration debugCompileClasspath --no-daemon || true
+
+      - name: 11. Assemble Debug APK
+        run: |
+          $GRADLE_EXE \
+            :app:assembleDebug \
+            --no-daemon \
+            --no-parallel \
+            --no-configure-on-demand \
+            --max-workers=1 \
+            --stacktrace \
+            --info \
+            -Dorg.gradle.warning.mode=all \
+            -Dorg.gradle.jvmargs="-Xmx1536m -XX:MaxMetaspaceSize=512m -Dfile.encoding=UTF-8"
         env:
-          GRADLE_OPTS: "-Xmx1536m -Dorg.gradle.daemon=false"
+          ANDROID_HOME: ${{ env.ANDROID_HOME }}
+          ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}
 
-      - name: Upload APK
+      - name: 12. Upload APK
         uses: actions/upload-artifact@v4
+        if: success()
         with:
           name: app-debug
           path: app/build/outputs/apk/debug/app-debug.apk
+
+      - name: 13. Upload failure logs
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: build-failure-logs
+          path: |
+            app/build/reports/
+            ~/.gradle/daemon/8.4/
+
+      - name: 14. Print failure info
+        if: failure()
+        run: |
+          echo "========== BUILD FAILED =========="
+          cat app/build/reports/lint-results.html || true
+          find app/build -name "*.log" -exec cat {} \; || true
+          echo "=================================="
