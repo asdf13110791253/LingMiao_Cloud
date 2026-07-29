@@ -1,4 +1,4 @@
-name: Android CI (Safe)
+name: Android CI (No Wrapper)
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 20  # 最多跑 20 分钟，到点强杀，防止卡死
+    timeout-minutes: 25
 
     steps:
       - name: Checkout
@@ -23,11 +23,14 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Make gradlew executable
-        run: chmod +x ./gradlew
+      - name: Install Gradle manually
+        run: |
+          wget -q https://services.gradle.org/distributions/gradle-8.4-bin.zip
+          unzip -q gradle-8.4-bin.zip
+          echo "GRADLE_BIN=$PWD/gradle-8.4/bin/gradle" >> $GITHUB_ENV
 
-      - name: Build Debug APK (Single Thread)
-        run: ./gradlew :app:assembleDebug --no-daemon --parallel=false --max-workers=1
+      - name: Build Debug APK
+        run: $GRADLE_BIN :app:assembleDebug --no-daemon --parallel=false --max-workers=1
         env:
           GRADLE_OPTS: "-Xmx1536m -Dorg.gradle.daemon=false"
 
