@@ -1,39 +1,35 @@
-name: Android CI (Stable)
+name: Android CI (Fixed)
 
 on:
   push:
-    branches: [ main, develop ]
-  workflow_dispatch:
-
-env:
-  GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.parallel=true -Dorg.gradle.caching=true -Dorg.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8"
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout source
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Set up JDK 11
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '11'
           distribution: 'temurin'
-          cache: gradle
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build with Gradle
+        run: ./gradlew assembleRelease
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
         with:
-          api-level: 34
-          build-tools: 34.0.0
-          cache: true
-
-      - name: Make gradlew executable
-        run: chmod +x ./gradlew
-
-      - name: Clean project
+          name: app-release.apk
+          path: app/build/outputs/apk/release/app-release-unsigned.apk
         run: ./gradlew clean --stacktrace
 
       - name: Build Debug APK
