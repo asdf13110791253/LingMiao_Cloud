@@ -1,4 +1,4 @@
-name: Android CI
+name: Android CI (Stable)
 
 on:
   push:
@@ -6,11 +6,7 @@ on:
   workflow_dispatch:
 
 env:
-  GRADLE_OPTS: >
-    -Dorg.gradle.daemon=false
-    -Dorg.gradle.parallel=true
-    -Dorg.gradle.caching=true
-    -Dorg.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8
+  GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.parallel=true -Dorg.gradle.caching=true -Dorg.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8"
 
 jobs:
   build:
@@ -34,6 +30,29 @@ jobs:
           build-tools: 34.0.0
           cache: true
 
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      - name: Clean project
+        run: ./gradlew clean --stacktrace
+
+      - name: Build Debug APK
+        run: ./gradlew :app:assembleDebug --no-daemon --stacktrace
+
+      - name: Build Release APK
+        run: ./gradlew :app:assembleRelease --no-daemon --stacktrace
+
+      - name: Upload Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Upload Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-unsigned
+          path: app/build/outputs/apk/release/app-release-unsigned.apk
       - name: Accept Android SDK licenses
         run: yes | sdkmanager --licenses
 
