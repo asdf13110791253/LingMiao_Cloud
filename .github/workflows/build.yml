@@ -1,4 +1,4 @@
-name: Android CI
+name: Android CI (Safe)
 
 on:
   push:
@@ -8,9 +8,10 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 20  # 最多跑 20 分钟，到点强杀，防止卡死
 
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Set up JDK 17
@@ -22,16 +23,17 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Setup Gradle
-        uses: gradle/gradle-build-action@v2
-        with:
-          cache-disabled: true
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
 
-      - name: Build Debug APK
-        run: gradle :app:assembleDebug --no-daemon
+      - name: Build Debug APK (Single Thread)
+        run: ./gradlew :app:assembleDebug --no-daemon --parallel=false --max-workers=1
+        env:
+          GRADLE_OPTS: "-Xmx1536m -Dorg.gradle.daemon=false"
 
-      - name: Upload Debug APK
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: app-debug
+          path: app/build/outputs/apk/debug/app-debug.apk
           path: app/build/outputs/apk/debug/app-debug.apk
