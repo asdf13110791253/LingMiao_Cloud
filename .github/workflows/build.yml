@@ -21,22 +21,27 @@ jobs:
         with:
           gradle-version: 8.4
 
-      - name: 全量仓库配置（解决OpenCV找不到）
+      # CI自动下载OpenCV4.8本地模块，规避线上找不到依赖
+      - name: 下载OpenCV 4.8 Android SDK
+        run: |
+          wget -O opencv.zip https://github.com/opencv/opencv/releases/download/4.8.0/opencv-4.8.0-android-sdk.zip
+          unzip -q opencv.zip
+          mv opencv-4.8.0-android-sdk/sdk/java ./opencv
+          echo "include ':opencv'" >> settings.gradle
+
+      # 全局镜像兜底
+      - name: 配置全局仓库
         run: |
           mkdir -p ~/.gradle
           cat > ~/.gradle/init.gradle <<'EOF'
           allprojects {
             repositories {
-              // 阿里云镜像
               maven { url 'https://maven.aliyun.com/repository/google' }
               maven { url 'https://maven.aliyun.com/repository/public' }
               maven { url 'https://maven.aliyun.com/repository/jcenter' }
-              // JitPack 第三方库
               maven { url 'https://jitpack.io' }
-              // 官方兜底
               google()
               mavenCentral()
-              jcenter()
             }
           }
           EOF
