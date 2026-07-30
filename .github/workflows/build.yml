@@ -27,8 +27,14 @@ jobs:
           }
           EOF
 
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
+      # 下载对应gradle wrapper补齐缺失jar
+      - name: Fix Gradle Wrapper
+        run: |
+          wget https://services.gradle.org/distributions/gradle-8.4-bin.zip -O gradle.zip
+          unzip -q gradle
+          cp gradle-8.4/lib/gradle-wrapper.jar gradle/wrapper/
+          rm -rf gradle gradle.zip
+          chmod +x gradlew
 
       - name: Build debug apk
         run: ./gradlew :app:assembleDebug --stacktrace
