@@ -19,7 +19,7 @@ jobs:
         run: |
           wget -O opencv.zip https://github.com/opencv/opencv/releases/download/4.8.0/opencv-4.8.0-android-sdk.zip
           unzip -q opencv.zip
-          mv ./sdk/java ./opencv
+          mv OpenCV-android-sdk/sdk/java ./opencv
           echo "include ':opencv'" >> settings.gradle
 
       - name: Build Debug APK
