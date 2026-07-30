@@ -21,17 +21,14 @@ jobs:
           allprojects {
               repositories {
                   maven { url 'https://maven.aliyun.com/repository/public' }
+                  google()
+                  mavenCentral()
               }
           }
           EOF
 
-      - name: Fix Gradle Wrapper Jar
-        run: |
-          wget https://services.gradle.org/distributions/gradle-8.4-bin.zip
-          unzip gradle-8.4-bin.zip
-          cp gradle-8.4/lib/gradle-wrapper.jar gradle/wrapper/
-          rm -rf gradle-8.4 gradle-8.4-bin.zip
-          chmod +x gradlew
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
 
       - name: Build debug apk
         run: ./gradlew :app:assembleDebug --stacktrace
