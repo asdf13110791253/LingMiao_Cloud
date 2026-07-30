@@ -11,9 +11,9 @@ jobs:
           java-version: '17'
           distribution: temurin
 
-      - name: Download and configure OpenCV 4.8 SDK
+      - name: Download and configure OpenCV 4.10 SDK
         run: |
-          wget -O opencv-sdk.zip https://github.com/opencv/releases/download/4.8.0/opencv-4.8.0-android-sdk.zip
+          wget -O opencv-sdk.zip https://github.com/opencv/releases/download/4.10.0/opencv-4.10.0-android-sdk.zip
           unzip -q opencv-sdk.zip
           cp -r OpenCV-android-sdk/sdk/java ./opencv
           mkdir -p ./opencv/src/main/jniLibs
@@ -31,5 +31,5 @@ jobs:
       - name: Upload compiled APK
         uses: actions/upload-artifact@v4
         with:
-          name: apk-file
+          name: LingMiao-Debug-Package
           path: app/build/outputs/apk/debug/app-debug.apk
