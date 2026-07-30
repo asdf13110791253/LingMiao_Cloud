@@ -16,12 +16,32 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: 安装Gradle 8.4（官方Action，不用下载jar）
+      - name: 安装Gradle 8.4
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: 8.4
 
-      - name: 编译APK（直接用gradle命令，不用gradlew）
+      - name: 全量仓库配置（解决OpenCV找不到）
+        run: |
+          mkdir -p ~/.gradle
+          cat > ~/.gradle/init.gradle <<'EOF'
+          allprojects {
+            repositories {
+              // 阿里云镜像
+              maven { url 'https://maven.aliyun.com/repository/google' }
+              maven { url 'https://maven.aliyun.com/repository/public' }
+              maven { url 'https://maven.aliyun.com/repository/jcenter' }
+              // JitPack 第三方库
+              maven { url 'https://jitpack.io' }
+              // 官方兜底
+              google()
+              mavenCentral()
+              jcenter()
+            }
+          }
+          EOF
+
+      - name: 编译APK
         run: gradle :app:assembleDebug --no-daemon --stacktrace
 
       - name: 上传APK
