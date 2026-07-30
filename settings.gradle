@@ -17,3 +17,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "MyApp"
 include ':app'
+// 新增opencv模块引入，CI自动生成该模块文件夹
+include ':opencv'
