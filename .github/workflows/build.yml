@@ -13,13 +13,12 @@ jobs:
 
       - name: Download and configure OpenCV 4.8 SDK
         run: |
-          wget -O opencv-sdk.zip https://github.com/opencv/opencv/releases/download/4.8.0/opencv-4.8.0-android-sdk.zip
+          wget -O opencv-sdk.zip https://github.com/opencv/releases/download/4.8.0/opencv-4.8.0-android-sdk.zip
           unzip -q opencv-sdk.zip
-          # 只复制我们需要的java模块，直接删掉samples文件夹，避免自带gradle-wrapper干扰
           cp -r OpenCV-android-sdk/sdk/java ./opencv
           mkdir -p ./opencv/src/main/jniLibs
           cp -r OpenCV-android-sdk/sdk/native/libs/arm64-v8a ./opencv/src/main/jniLibs/
-          rm -rf OpenCV-android-sdk
+          rm -rf OpenCV-android-sdk opencv-sdk.zip
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
