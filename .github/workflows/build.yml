@@ -5,16 +5,28 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-java@v4
-        with: {java-version: '17', distribution: temurin}
+        with:
+          java-version: '17'
+          distribution: temurin
+
       - uses: gradle/actions/setup-gradle@v4
-        with: {gradle-version: 8.4}
-      - name: 拉取OpenCV本地SDK
+        with:
+          gradle-version: 8.4
+
+      - name: Fetch OpenCV SDK
         run: |
           wget -O opencv.zip https://github.com/opencv/opencv/releases/download/4.8.0/opencv-4.8.0-android-sdk.zip
           unzip -q opencv.zip
-          mv opencv-4.8.0-android-sdk/sdk/java ./opencv
+          mv ./sdk/java ./opencv
           echo "include ':opencv'" >> settings.gradle
-      - run: gradle :app:assembleDebug --stacktrace
-      - uses: actions/upload-artifact@v4
-        with: {name: apk, path: app/build/outputs/apk/debug/app-debug.apk}
+
+      - name: Build Debug APK
+        run: gradle :app:assembleDebug --stacktrace
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk
+          path: app/build/outputs/apk/debug/app-debug.apk
