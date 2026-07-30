@@ -12,21 +12,12 @@ jobs:
           distribution: temurin
 
       - uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: 8.4
-
-      - name: Fetch OpenCV SDK
-        run: |
-          wget -O opencv.zip https://github.com/opencv/opencv/releases/download/4.8.0/opencv-4.8.0-android-sdk.zip
-          unzip -q opencv.zip
-          mv OpenCV-android-sdk/sdk/java ./opencv
-          echo "include ':opencv'" >> settings.gradle
 
       - name: Build Debug APK
-        run: gradle :app:assembleDebug --stacktrace
+        run: gradle :app:assembleDebug
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: apk
+          name: apk-file
           path: app/build/outputs/apk/debug/app-debug.apk
