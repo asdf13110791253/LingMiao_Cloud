@@ -1,9 +1,7 @@
 name: Build Android APK
-# 精准触发规则，仅main分支执行
 on:
   push:
     branches: [ main ]
-    # 仅代码/构建文件变更才打包，资源文件改动跳过
     paths:
       - '**.gradle'
       - 'gradle/wrapper/**'
@@ -17,28 +15,21 @@ on:
       - 'src/**'
 
 env:
-  # 全局统一Gradle变量，自动适配项目版本
   GRADLE_WRAPPER_DIR: ./gradle/wrapper
   MAVEN_ALIYUN_GOOGLE: https://maven.aliyun.com/repository/google
   MAVEN_ALIYUN_PUBLIC: https://maven.aliyun.com/repository/public
+  GRADLE_VER: 8.4
 
 jobs:
   build-android:
     name: 编译安卓APK
     runs-on: ubuntu-latest
-    # 失败自动重试2次，解决网络偶发报错
-    continue-on-error: false
-    strategy:
-      max-parallel: 1
-
     steps:
-      # 1. 拉取完整代码（包含历史用于缓存hash计算）
       - name: 检出项目源码
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # 2. JDK17 标准化配置
       - name: 配置JDK17
         uses: actions/setup-java@v4
         with:
@@ -46,7 +37,6 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
-      # 3. 长效Gradle缓存（高级核心，大幅提速）
       - name: Gradle依赖缓存
         uses: actions/cache@v4
         with:
@@ -54,23 +44,19 @@ jobs:
             ~/.gradle/caches
             ~/.gradle/wrapper
             gradle/wrapper
-          key: ${{ runner.os }}-gradle-v2-${{ hashFiles('**/gradle-wrapper.properties', '**/*.gradle.kts', '**/*.gradle') }}
+          key: ${{ runner.os }}-gradle-v2-${{ hashFiles('**/gradle-wrapper.properties', '**/*.gradle') }}
           restore-keys: |
             ${{ runner.os }}-gradle-v2-
 
-      # 4. 自动修复gradle-wrapper（智能匹配项目版本，无404）
       - name: 自动修复Gradle Wrapper
         run: |
           mkdir -p $GRADLE_WRAPPER_DIR
-          # 读取项目配置里的gradle版本，动态下载对应包
-          GRADLE_VERSION=$(grep -o "gradle-[0-9.]*-bin" gradle/wrapper/gradle-wrapper.properties | cut -d'-' -f2)
-          wget -q https://mirrors.aliyun.com/gradle/gradle-${GRADLE_VERSION}-bin.zip -O gradle-temp.zip
+          wget -q https://mirrors.aliyun.com/gradle/gradle-${{ env.GRADLE_VER }}-bin.zip -O gradle-temp.zip
           unzip -q gradle-temp
-          cp gradle-${GRADLE_VERSION}/lib/gradle-wrapper.jar $GRADLE_WRAPPER_DIR/
-          rm -rf gradle-${GRADLE_VERSION} gradle-temp.zip
+          cp gradle-${{ env.GRADLE_VER }}/lib/gradle-wrapper.jar $GRADLE_WRAPPER_DIR/
+          rm -rf gradle-${{ env.GRADLE_VER }} gradle-temp.zip
           chmod +x gradlew
 
-      # 5. 全局阿里云镜像（屏蔽谷歌源超时问题）
       - name: 配置国内Maven镜像
         run: |
           mkdir -p ~/.gradle
@@ -82,24 +68,20 @@ jobs:
               google()
               mavenCentral()
             }
-            // 关闭过时重试API，消除之前构建报错
             configurations.all {
               resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
             }
           }
           EOF
 
-      # 6. 赋予脚本执行权限
       - name: 授予执行权限
         run: chmod +x ./gradlew
 
-      # 7. 构建Debug包，带堆栈日志，内存优化
       - name: 编译Debug APK
         run: ./gradlew :app:assembleDebug --no-daemon --max-workers=2 --stacktrace
         env:
           GRADLE_OPTS: "-Xmx2048m -XX:MaxMetaspaceSize=512m"
 
-      # 8. 产物上传，区分构建编号方便下载
       - name: 上传编译成品APK
         uses: actions/upload-artifact@v4
         with:
@@ -107,7 +89,6 @@ jobs:
           path: app/build/outputs/apk/debug/app-debug.apk
           retention-days: 14
 
-      # 9. 后置清理，释放服务器磁盘空间（高级运维项）
       - name: 清理无用缓存文件
         if: always()
         run: |
