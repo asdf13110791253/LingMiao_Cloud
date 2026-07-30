@@ -20,8 +20,18 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Create local.properties
-        run: echo "sdk.dir=$HOME/android-sdk" > local.properties
+      - name: Fix gradle init script conflict
+        run: |
+          mkdir -p ~/.gradle
+          echo "allprojects {" > ~/.gradle/init.gradle
+          echo "    buildscript {" >> ~/.gradle/init.gradle
+          echo "        repositories {" >> ~/.gradle/init.gradle
+          echo "            maven { url 'https://maven.aliyun.com/repository/public' }" >> ~/.gradle/init.gradle
+          echo "            google()" >> ~/.gradle/init.gradle
+          echo "            mavenCentral()" >> ~/.gradle/init.gradle
+          echo "        }" >> ~/.gradle/init.gradle
+          echo "    }" >> ~/.gradle/init.gradle
+          echo "}" >> ~/.gradle/init.gradle
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
