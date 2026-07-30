@@ -11,12 +11,20 @@ jobs:
           java-version: '17'
           distribution: temurin
 
+      - name: Download and configure OpenCV 4.8 SDK
+        run: |
+          wget -O opencv-sdk.zip https://github.com/opencv/opencv/releases/download/4.8.0/opencv-4.8.0-android-sdk.zip
+          unzip -q opencv-sdk.zip
+          cp -r OpenCV-android-sdk/sdk/java ./opencv
+          mkdir -p ./opencv/src/main/jniLibs
+          cp -r OpenCV-android-sdk/sdk/native/libs/arm64-v8a ./opencv/src/main/jniLibs/
+
       - uses: gradle/actions/setup-gradle@v4
 
-      - name: Build Debug APK
-        run: gradle :app:assembleDebug
+      - name: Compile Debug APK
+        run: gradle :app:assembleDebug --stacktrace
 
-      - name: Upload APK Artifact
+      - name: Upload compiled APK
         uses: actions/upload-artifact@v4
         with:
           name: apk-file
